@@ -12,20 +12,47 @@ import type {
 } from "@/types/domain";
 
 export async function ensureProfile(userId: string, fullName?: string | null, avatarUrl?: string | null) {
-  await db
-    .insert(profiles)
-    .values({
-      id: userId,
-      fullName: fullName ?? null,
-      avatarUrl: avatarUrl ?? null,
-    })
-    .onConflictDoUpdate({
-      target: profiles.id,
-      set: {
+  try {
+    await db
+      .insert(profiles)
+      .values({
+        id: userId,
         fullName: fullName ?? null,
         avatarUrl: avatarUrl ?? null,
-      },
+      })
+      .onConflictDoUpdate({
+        target: profiles.id,
+        set: {
+          fullName: fullName ?? null,
+          avatarUrl: avatarUrl ?? null,
+        },
+      });
+  } catch (error) {
+    const dbError = error as {
+      message?: string;
+      code?: string;
+      detail?: string;
+      hint?: string;
+      constraint_name?: string;
+      table_name?: string;
+      schema_name?: string;
+    };
+
+    console.error("[db:ensureProfile] upsert failed", {
+      userId,
+      fullName,
+      avatarUrl,
+      message: dbError.message,
+      code: dbError.code,
+      detail: dbError.detail,
+      hint: dbError.hint,
+      constraint: dbError.constraint_name,
+      table: dbError.table_name,
+      schema: dbError.schema_name,
     });
+
+    throw error;
+  }
 }
 
 export async function getGroupsForUser(userId: string): Promise<GroupView[]> {

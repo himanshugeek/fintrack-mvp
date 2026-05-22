@@ -1,9 +1,10 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/ui/themes";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { Toaster } from "sonner";
 
+import { PWARegister } from "@/components/pwa-register";
 import { QueryProvider } from "@/components/providers/query-provider";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,26 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "FinTrack",
   description: "Shared personal finance tracking for couples, roommates, and small groups.",
+  applicationName: "FinTrack",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "FinTrack",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0f172a",
 };
 
 export default function RootLayout({
@@ -38,6 +59,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ClerkProvider appearance={{ theme: shadcn }}>
           <QueryProvider>
+            <PWARegister />
             {children}
             <Toaster richColors position="top-right" />
           </QueryProvider>
