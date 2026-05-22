@@ -11,6 +11,56 @@ import type {
   TransactionView,
 } from "@/types/domain";
 
+type DbErrorShape = {
+  name?: string;
+  message?: string;
+  code?: string;
+  detail?: string;
+  hint?: string;
+  severity?: string;
+  table_name?: string;
+  schema_name?: string;
+  column_name?: string;
+  constraint_name?: string;
+  where?: string;
+  routine?: string;
+  cause?: unknown;
+};
+
+function getDbErrorChain(error: unknown, maxDepth = 6): DbErrorShape[] {
+  const chain: DbErrorShape[] = [];
+  let current: unknown = error;
+  let depth = 0;
+
+  while (current && depth < maxDepth) {
+    if (typeof current !== "object") {
+      chain.push({ message: String(current) });
+      break;
+    }
+
+    const entry = current as DbErrorShape;
+    chain.push({
+      name: entry.name,
+      message: entry.message,
+      code: entry.code,
+      detail: entry.detail,
+      hint: entry.hint,
+      severity: entry.severity,
+      table_name: entry.table_name,
+      schema_name: entry.schema_name,
+      column_name: entry.column_name,
+      constraint_name: entry.constraint_name,
+      where: entry.where,
+      routine: entry.routine,
+    });
+
+    current = entry.cause;
+    depth += 1;
+  }
+
+  return chain;
+}
+
 export async function ensureProfile(userId: string, fullName?: string | null, avatarUrl?: string | null) {
   try {
     await db
@@ -28,15 +78,11 @@ export async function ensureProfile(userId: string, fullName?: string | null, av
         },
       });
   } catch (error) {
-    const dbError = error as {
-      message?: string;
-      code?: string;
-      detail?: string;
-      hint?: string;
-      constraint_name?: string;
-      table_name?: string;
-      schema_name?: string;
-    };
+    const errorChain = getDbErrorChain(error);
+    const dbError =
+      errorChain.find((entry) => Boolean(entry.code || entry.detail || entry.severity || entry.hint)) ??
+      errorChain[0] ??
+      {};
 
     console.error("[db:ensureProfile] upsert failed", {
       userId,
@@ -49,6 +95,11 @@ export async function ensureProfile(userId: string, fullName?: string | null, av
       constraint: dbError.constraint_name,
       table: dbError.table_name,
       schema: dbError.schema_name,
+      severity: dbError.severity,
+      column: dbError.column_name,
+      where: dbError.where,
+      routine: dbError.routine,
+      errorChain,
     });
 
     throw error;
