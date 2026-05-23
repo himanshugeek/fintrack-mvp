@@ -3,7 +3,7 @@
 FinTrack is a modern full-stack web app for shared personal finance tracking between couples, roommates, or small groups.
 
 This MVP supports:
-- Clerk authentication (signup/login/logout/session)
+- Firebase Authentication with Google sign-in
 - Group creation and rename
 - Group invitation by email and invitation acceptance
 - Income and expense entries
@@ -15,7 +15,7 @@ This MVP supports:
 - Frontend: Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui style components, Radix primitives
 - Client data/state: TanStack Query
 - Forms and validation: React Hook Form + Zod
-- Auth: Clerk
+- Auth: Firebase Authentication
 - Backend and DB: Supabase Postgres + Drizzle ORM
 - Deployment: Vercel (frontend), Supabase (backend)
 
@@ -53,7 +53,7 @@ Row Level Security policies are defined in [supabase/schema.sql](supabase/schema
 - Invitation and membership access is constrained to related groups and invited users
 
 Note:
-- This project uses Clerk user IDs (`text`) for user identity columns to align with Clerk auth IDs.
+- This project stores authentication identity IDs (`text`) from Firebase users.
 - The SQL includes a `current_user_id()` helper based on JWT claims (`sub`).
 
 ## Setup
@@ -69,13 +69,8 @@ npm install
 Create or update `.env.local`:
 
 ```dotenv
-# Clerk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
-CLERK_SECRET_KEY=...
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/dashboard
-NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/dashboard
+# Firebase
+FIREBASE_WEB_API_KEY=AIzaSyD-rQeSVvLBhpN35FcUSj6X7jKZoz2tp_g
 
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=...
@@ -156,7 +151,7 @@ API endpoints:
 ### Supabase
 - Create project
 - Execute [supabase/schema.sql](supabase/schema.sql)
-- Configure JWT integration so `sub` maps to Clerk user ID
+- Configure JWT integration so `sub` maps to your auth provider user ID
 
 ## Notes
 

@@ -1,5 +1,5 @@
 -- FinTrack MVP schema + RLS for Supabase Postgres
--- This setup expects JWT sub to contain the Clerk user ID.
+-- This setup expects JWT sub to contain the auth provider user ID.
 
 create extension if not exists pgcrypto;
 

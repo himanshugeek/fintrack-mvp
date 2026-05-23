@@ -10,10 +10,11 @@ import type { DashboardData } from "@/types/domain";
 
 const DASHBOARD_KEY = "dashboard";
 
-export function useDashboardData(groupId?: string) {
+export function useDashboardData(groupId?: string, enabled = true) {
   return useQuery({
     queryKey: [DASHBOARD_KEY, groupId],
     queryFn: () => apiRequest<DashboardData>(`/api/dashboard${groupId ? `?groupId=${groupId}` : ""}`),
+    enabled,
   });
 }
 

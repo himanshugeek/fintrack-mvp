@@ -1,8 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { SignOutButton, UserButton } from "@clerk/nextjs";
+import type { User } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import { ArrowDownRight, ArrowUpRight, Loader2, LogOut, Menu, Plus, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -34,9 +36,14 @@ import {
   useInviteUser,
   useRenameGroup,
 } from "@/hooks/use-dashboard-data";
+import { firebaseAuth } from "@/lib/firebase/client";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 
 export function DashboardShell() {
+  const router = useRouter();
+  const [authReady, setAuthReady] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | undefined>(undefined);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
@@ -48,7 +55,7 @@ export function DashboardShell() {
   const [quickVisibility, setQuickVisibility] = useState<"shared" | "personal">("shared");
   const [selectedAnalyticsMonth, setSelectedAnalyticsMonth] = useState<string>("all");
 
-  const dashboardQuery = useDashboardData(selectedGroupId);
+  const dashboardQuery = useDashboardData(selectedGroupId, authReady && Boolean(currentUser));
   const effectiveGroupId = selectedGroupId ?? dashboardQuery.data?.selectedGroupId ?? undefined;
 
   const createGroupMutation = useCreateGroup();
@@ -96,6 +103,19 @@ export function DashboardShell() {
       note: "",
     },
   });
+
+  useEffect(() => {
+    const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      setAuthReady(true);
+
+      if (!user) {
+        router.replace("/sign-in");
+      }
+    });
+
+    return unsubscribe;
+  }, [router]);
 
   useEffect(() => {
     if (effectiveGroupId) {
@@ -193,7 +213,20 @@ export function DashboardShell() {
     }
   };
 
-  if (dashboardQuery.isLoading) {
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+
+    try {
+      await signOut(firebaseAuth);
+      router.replace("/sign-in");
+    } catch {
+      toast.error("Failed to sign out.");
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
+  if (!authReady || !currentUser || dashboardQuery.isLoading) {
     return <DashboardLoadingState />;
   }
 
@@ -348,13 +381,16 @@ export function DashboardShell() {
                   </form>
                 </DialogContent>
               </Dialog>
-              <UserButton />
-              <SignOutButton>
-                <Button variant="outline">
-                  <LogOut className="size-4" />
+              <div className="hidden items-center gap-2 rounded-xl border px-2 py-1 sm:flex">
+                <div className="flex size-8 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold text-zinc-700">
+                  {(currentUser.displayName?.[0] ?? currentUser.email?.[0] ?? "U").toUpperCase()}
+                </div>
+                <p className="max-w-40 truncate text-sm text-muted-foreground">{currentUser.email}</p>
+              </div>
+              <Button variant="outline" onClick={handleSignOut} disabled={isSigningOut}>
+                {isSigningOut ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />}
                   <span className="sr-only sm:not-sr-only">Logout</span>
-                </Button>
-              </SignOutButton>
+              </Button>
             </div>
           </header>
 
