@@ -11,7 +11,9 @@ const booleanFromEnv = z.preprocess((value) => {
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1).default("postgres://postgres:postgres@127.0.0.1:5432/postgres"),
-  FIREBASE_WEB_API_KEY: z.string().min(1).default("AIzaSyD-rQeSVvLBhpN35FcUSj6X7jKZoz2tp_g"),
+  GOOGLE_CLIENT_ID: z.string().min(1).default("google-client-id-placeholder.apps.googleusercontent.com"),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).default("google-client-secret-placeholder"),
+  NEXTAUTH_SECRET: z.string().min(1).default("nextauth-secret-placeholder"),
   LOG_DB_QUERIES: booleanFromEnv.default(false),
 });
 

@@ -1,41 +1,33 @@
 "use client";
 
-import { FirebaseError } from "firebase/app";
-import { signInWithPopup } from "firebase/auth";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { signIn, useSession } from "next-auth/react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getFirebaseAnalytics, firebaseAuth, googleProvider } from "@/lib/firebase/client";
 
 export default function SignInPage() {
   const router = useRouter();
+  const { status } = useSession();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    void getFirebaseAnalytics();
-
-    const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
-      if (user) {
-        router.replace("/dashboard");
-      }
-    });
-
-    return unsubscribe;
-  }, [router]);
+    if (status === "authenticated") {
+      router.replace("/dashboard");
+    }
+  }, [router, status]);
 
   const onGoogleSignIn = async () => {
     setIsSigningIn(true);
     setErrorMessage(null);
 
     try {
-      await signInWithPopup(firebaseAuth, googleProvider);
-      router.replace("/dashboard");
+      await signIn("google", { callbackUrl: "/dashboard" });
     } catch (error) {
-      if (error instanceof FirebaseError) {
+      if (error instanceof Error) {
         setErrorMessage(error.message);
       } else {
         setErrorMessage("Unable to sign in with Google right now.");

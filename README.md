@@ -3,7 +3,7 @@
 FinTrack is a modern full-stack web app for shared personal finance tracking between couples, roommates, or small groups.
 
 This MVP supports:
-- Firebase Authentication with Google sign-in
+- Google sign-in using Google Cloud OAuth (NextAuth)
 - Group creation and rename
 - Group invitation by email and invitation acceptance
 - Income and expense entries
@@ -15,7 +15,7 @@ This MVP supports:
 - Frontend: Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui style components, Radix primitives
 - Client data/state: TanStack Query
 - Forms and validation: React Hook Form + Zod
-- Auth: Firebase Authentication
+- Auth: NextAuth + Google OAuth
 - Backend and DB: Supabase Postgres + Drizzle ORM
 - Deployment: Vercel (frontend), Supabase (backend)
 
@@ -53,7 +53,7 @@ Row Level Security policies are defined in [supabase/schema.sql](supabase/schema
 - Invitation and membership access is constrained to related groups and invited users
 
 Note:
-- This project stores authentication identity IDs (`text`) from Firebase users.
+- This project stores authentication identity IDs (`text`) from Google OAuth subject IDs.
 - The SQL includes a `current_user_id()` helper based on JWT claims (`sub`).
 
 ## Setup
@@ -69,8 +69,11 @@ npm install
 Create or update `.env.local`:
 
 ```dotenv
-# Firebase
-FIREBASE_WEB_API_KEY=AIzaSyD-rQeSVvLBhpN35FcUSj6X7jKZoz2tp_g
+# Google OAuth (Google Cloud)
+GOOGLE_CLIENT_ID=google-client-id-placeholder.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=google-client-secret-placeholder
+NEXTAUTH_SECRET=nextauth-secret-placeholder
+NEXTAUTH_URL=http://localhost:3000
 
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=...
@@ -79,6 +82,10 @@ DATABASE_URL=postgres://...
 ```
 
 Use Supabase transaction or session pooler URL for `DATABASE_URL`.
+
+In Google Cloud Console, create OAuth credentials and set the authorized redirect URI to:
+
+`http://localhost:3000/api/auth/callback/google`
 
 ### 3) Apply database schema
 

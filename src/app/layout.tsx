@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { Toaster } from "sonner";
 
 import { PWARegister } from "@/components/pwa-register";
+import { AuthSessionProvider } from "@/components/providers/auth-session-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -55,11 +56,13 @@ export default function RootLayout({
       className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
     >
       <body className="min-h-full flex flex-col">
-        <QueryProvider>
-          <PWARegister />
-          {children}
-          <Toaster richColors position="top-right" />
-        </QueryProvider>
+        <AuthSessionProvider>
+          <QueryProvider>
+            <PWARegister />
+            {children}
+            <Toaster richColors position="top-right" />
+          </QueryProvider>
+        </AuthSessionProvider>
       </body>
     </html>
   );
