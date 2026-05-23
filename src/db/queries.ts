@@ -400,6 +400,7 @@ export async function getDashboardData(userId: string, email: string, selectedGr
         personalIncome: 0,
         personalExpense: 0,
       },
+      memberBalances: [],
       recentTransactions: [],
     };
   }
@@ -441,6 +442,29 @@ export async function getDashboardData(userId: string, email: string, selectedGr
     )
     .orderBy(desc(transactions.createdAt))
     .limit(10);
+
+  const memberBalanceRows = await db
+    .select({
+      userId: groupMembers.userId,
+      userDisplayName: profiles.fullName,
+      income: sql<string>`coalesce(sum(case when ${transactions.type} = 'income' then ${transactions.amount} else 0 end), 0)`,
+      expense: sql<string>`coalesce(sum(case when ${transactions.type} = 'expense' then ${transactions.amount} else 0 end), 0)`,
+    })
+    .from(groupMembers)
+    .leftJoin(profiles, eq(profiles.id, groupMembers.userId))
+    .leftJoin(
+      transactions,
+      and(
+        eq(transactions.groupId, activeGroupId),
+        eq(transactions.userId, groupMembers.userId),
+        or(
+          eq(transactions.visibility, "shared"),
+          and(eq(transactions.visibility, "personal"), eq(transactions.userId, userId))
+        )
+      )
+    )
+    .where(eq(groupMembers.groupId, activeGroupId))
+    .groupBy(groupMembers.userId, profiles.fullName);
 
   const analyticsRows = await db
     .select({
@@ -530,6 +554,21 @@ export async function getDashboardData(userId: string, email: string, selectedGr
     userDisplayName: row.userDisplayName ?? (row.transactionUserId === userId ? "You" : "Member"),
   }));
 
+  const memberBalances = memberBalanceRows
+    .map((row) => {
+      const income = Number(row.income);
+      const expense = Number(row.expense);
+
+      return {
+        userId: row.userId,
+        userDisplayName: row.userDisplayName ?? (row.userId === userId ? "You" : "Member"),
+        income,
+        expense,
+        balance: income - expense,
+      };
+    })
+    .sort((left, right) => right.balance - left.balance);
+
   return {
     selectedGroupId: activeGroupId,
     groups: groupsForUser,
@@ -541,6 +580,7 @@ export async function getDashboardData(userId: string, email: string, selectedGr
       personalIncome: Number(summaryRow?.personalIncome ?? 0),
       personalExpense: Number(summaryRow?.personalExpense ?? 0),
     },
+    memberBalances,
     recentTransactions,
   };
 }

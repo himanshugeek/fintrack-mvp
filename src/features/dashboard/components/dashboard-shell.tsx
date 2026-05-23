@@ -50,6 +50,7 @@ export function DashboardShell() {
   const [quickCategory, setQuickCategory] = useState("");
   const [quickVisibility, setQuickVisibility] = useState<"shared" | "personal">("shared");
   const [selectedAnalyticsMonth, setSelectedAnalyticsMonth] = useState<string>("all");
+  const [selectedMemberId, setSelectedMemberId] = useState<string>("");
 
   const dashboardQuery = useDashboardData(selectedGroupId, status === "authenticated");
   const effectiveGroupId = selectedGroupId ?? dashboardQuery.data?.selectedGroupId ?? undefined;
@@ -110,6 +111,22 @@ export function DashboardShell() {
       }
     }
   }, [activeGroup?.name, effectiveGroupId, inviteForm, renameForm, transactionForm]);
+
+  useEffect(() => {
+    const memberBalances = dashboardQuery.data?.memberBalances ?? [];
+
+    if (memberBalances.length === 0) {
+      if (selectedMemberId !== "") {
+        setSelectedMemberId("");
+      }
+      return;
+    }
+
+    const hasSelectedMember = memberBalances.some((member) => member.userId === selectedMemberId);
+    if (!hasSelectedMember) {
+      setSelectedMemberId(memberBalances[0]?.userId ?? "");
+    }
+  }, [dashboardQuery.data?.memberBalances, selectedMemberId]);
 
   const onCreateGroup = groupForm.handleSubmit(async (values) => {
     try {
@@ -229,6 +246,7 @@ export function DashboardShell() {
   }
 
   const data = dashboardQuery.data;
+  const selectedMemberBalance = data.memberBalances.find((member) => member.userId === selectedMemberId) ?? null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 via-zinc-50 to-white">
@@ -553,7 +571,39 @@ export function DashboardShell() {
             </div>
           ) : (
             <>
-              <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                <Card>
+                  <CardHeader className="space-y-2 pb-2">
+                    <CardDescription>Member Balance</CardDescription>
+                    <Select
+                      value={selectedMemberId}
+                      onValueChange={setSelectedMemberId}
+                      disabled={data.memberBalances.length === 0}
+                    >
+                      <SelectTrigger className="h-8">
+                        <SelectValue placeholder="Select member" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {data.memberBalances.map((member) => (
+                          <SelectItem key={member.userId} value={member.userId}>
+                            {member.userDisplayName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </CardHeader>
+                  <CardContent className="flex items-center justify-between">
+                    <p className="text-2xl font-semibold tracking-tight">
+                      {formatCurrency(selectedMemberBalance?.balance ?? 0)}
+                    </p>
+                    {selectedMemberBalance && selectedMemberBalance.balance < 0 ? (
+                      <ArrowDownRight className="size-5 text-rose-600" />
+                    ) : (
+                      <ArrowUpRight className="size-5 text-emerald-600" />
+                    )}
+                  </CardContent>
+                </Card>
+
                 <SummaryCard title="Shared Income" amount={data.summary.sharedIncome} accent="income" />
                 <SummaryCard title="Shared Expense" amount={data.summary.sharedExpense} accent="expense" />
                 <SummaryCard title="Personal Income" amount={data.summary.personalIncome} accent="default" />

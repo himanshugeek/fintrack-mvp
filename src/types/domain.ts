@@ -39,6 +39,14 @@ export type DashboardSummary = {
   personalExpense: number;
 };
 
+export type MemberBalance = {
+  userId: string;
+  userDisplayName: string;
+  income: number;
+  expense: number;
+  balance: number;
+};
+
 export type AnalyticsSpender = {
   userId: string;
   userDisplayName: string;
@@ -66,6 +74,7 @@ export type DashboardData = {
   selectedGroupId: string | null;
   groups: GroupView[];
   summary: DashboardSummary;
+  memberBalances: MemberBalance[];
   recentTransactions: TransactionView[];
   pendingInvitations: InvitationView[];
   analytics: TransactionAnalytics;
